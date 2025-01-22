@@ -6,7 +6,7 @@ from .utils import decode_token
 
 
 
-class AccessTokenBearer(HTTPBearer):
+class TokenBearer(HTTPBearer):
     def __init__(self, auto_error = True):
         super().__init__(auto_error=auto_error)
 
@@ -20,13 +20,42 @@ class AccessTokenBearer(HTTPBearer):
         if not self.token_valid:
             raise  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Invalid or expired token")
         
-        if token_data['refresh']:
-            raise  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Please provide accesss toekn")
+        self.verify_token_data(token_data)
+        
+    
         
         return token_data
+    
+
+    def verify_token_data(self,token_data):
+        raise NotImplemented("Please Override this method in child classes")
+    
+    
     
 
     def token_valid(self,token:str)->bool:
         token_data =decode_token(token)
         return True if token_data is not None else False
+    
+
          
+
+
+class AccessTokenBearer(TokenBearer):
+
+    def verify_token_data(self,token_data:dict)->None:
+        if token_data and token_data['refresh']:
+            raise  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Please provide accesss token")
+
+
+    
+
+
+class RefreshTokenBearer(TokenBearer):
+
+    def verify_token_data(self,token_data:dict)->None:
+
+        if token_data and not token_data['refresh']:
+
+            raise  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Please provide refresh token")
+    
